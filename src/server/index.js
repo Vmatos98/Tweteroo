@@ -26,6 +26,23 @@ app.post("/sign-up", (req, res) => {
     res.status(201).send("OK");
 });
 
+app.post("/tweets", (req, res) => {
+    const {username, tweet} = req.body;
+    
+    if (!username || !tweet) {
+        res.status(400).send("certifique-se de ter enviado todos os dados");
+        return;
+    }
+    const data = JSON.parse(fs.readFileSync(dataContent));
+    
+    data.push(req.body);
+
+    fs.writeFile(dataContent, JSON.stringify(data, null, 2), (err) => {
+        if (err) throw err;
+        console.log(chalk.bold.yellow(`The tweet of ${username} has been added to DB`));
+    });
+    res.status(201).send("OK");
+});
 
 // app.get("/tweets", (req, res) => {
     
