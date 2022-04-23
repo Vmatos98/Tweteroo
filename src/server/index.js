@@ -44,7 +44,16 @@ app.post("/tweets", (req, res) => {
     res.status(201).send("OK");
 });
 
-// app.get("/tweets", (req, res) => {
+app.get("/tweets", (req, res) => {
+    const tweets = JSON.parse(fs.readFileSync(dataContent, "utf8"));
+    let output = [];
+    let count=0;
+    while(count<10 && count < tweets.length){
+        output.push(tweets[count]);
+        count++;
+    }
     
-// });
+    console.log(output);
+    res.send(output);
+});
 app.listen(5000);
