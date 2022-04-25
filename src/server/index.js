@@ -10,8 +10,12 @@ const dataContent = "src/DB/content.json";
 
 
 app.post("/sign-up", (req, res) => {
-    const {username} = req.body;
+    const {username, avatar} = req.body;
     const data = JSON.parse(fs.readFileSync(dataUsers));
+    if(!username || !avatar){
+        res.status(400).send("Todos os campos são obrigatórios!");
+        return;
+    }
     if (data.find((user) => user.username === username) ) {
         res.status(200).send("OK");
         console.log(chalk.bold.yellow(`The user: "${username}" already exists!`));
@@ -27,15 +31,25 @@ app.post("/sign-up", (req, res) => {
 });
 
 app.post("/tweets", (req, res) => {
-    const {username, tweet} = req.body;
-    
+    const {tweet} = req.body;
+    const username = req.header("user");
     if (!username || !tweet) {
-        res.status(400).send("certifique-se de ter enviado todos os dados");
+        res.status(400).send("Todos os campos são obrigatórios!");
         return;
     }
     const data = JSON.parse(fs.readFileSync(dataContent));
-    
-    data.push(req.body);
+    const users = JSON.parse(fs.readFileSync(dataUsers));
+    let avatar='';
+    users.find(user => {
+        if(user.username === username) avatar = user.avatar; 
+    })
+
+
+    data.unshift({
+        username,
+        avatar,
+        tweet,
+    });
 
     fs.writeFile(dataContent, JSON.stringify(data, null, 2), (err) => {
         if (err) throw err;
@@ -45,15 +59,61 @@ app.post("/tweets", (req, res) => {
 });
 
 app.get("/tweets", (req, res) => {
-    const tweets = JSON.parse(fs.readFileSync(dataContent, "utf8"));
-    let output = [];
-    let count=0;
-    while(count<10 && count < tweets.length){
-        output.push(tweets[count]);
-        count++;
+    const page = req.query.page;
+    if(isNaN(page) || page<1){
+        res.status(400).send("Informe uma página válida!");
+        return;
     }
-    
-    console.log(output);
+    const tweets = JSON.parse(fs.readFileSync(dataContent, "utf8"));
+    const output = [];
+    for(let i = page * 10 -10; i< page *10 - 1; i++){
+        if(i<= tweets.length) {
+            const username = tweets[i].username;
+            const tweet = tweets[i].tweet;
+            if(!tweets[i].avatar){
+                const users = JSON.parse(fs.readFileSync(dataUsers));
+                let avatar='';
+                users.find(user => {
+                    if(user.username === username) avatar = user.avatar; 
+                })
+                output.push({
+                    username,
+                    tweet,
+                    avatar
+                });
+                    console.log(output);
+            }else{
+            output.push(tweets[i]);
+            }
+        }
+    }
+    res.send(output);
+});
+
+app.get("/tweets/:user", (req, res) => {
+    const {user} = req.params;
+    const tweets = JSON.parse(fs.readFileSync(dataContent, "utf8"));
+    const output = [];
+    for(let i of tweets){
+        if(i.username === user){
+            const tweet = i.tweet;
+            if(!i.avatar){
+                const users = JSON.parse(fs.readFileSync(dataUsers));
+                let avatar='';
+                users.find(userData => {
+                    if(userData.username === user) avatar = userData.avatar; 
+                })
+                output.push({
+                    user,
+                    tweet,
+                    avatar
+                });
+                    console.log(output);
+            }else{
+                output.push(i);
+            }
+        }
+    }
     res.send(output);
 });
 app.listen(5000);
